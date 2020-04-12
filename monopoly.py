@@ -7,7 +7,10 @@ Created on Sat Apr 11 10:19:23 2020
 '''
 NEW
 
+IN PROCESS
+_ change payments to booleans in case of bankrupcy
 TODO
+_ accept negative values? for savings but then mortgage up to 0
 _ !bankrupcy!
 _ add monopoly chance cards
 _ throw exceptions
@@ -33,10 +36,13 @@ class Player(object):
     def pay(self,n):
         if n<0:
             print('invalid number')
+            return False
         elif self.savings-n < 0:
             print('cannot make payment')
+            return False
         else:
             self.savings -= n
+            return True
             
     def receive(self,n):
         if n<0:
@@ -153,31 +159,41 @@ def displayPropertiesOf(p1):
         print(plist[i])
 
 def payPlayer(p1,n,p2):
-    p1.pay(n)
-    p2.receive(n)
+    if p1.pay(n):
+        p2.receive(n)
+        return True
+    else:
+        print('payment failed')
+    return False
 
 def receiveFromBank(p1,n):
     p1.receive(n)
 
 def payToBank(p1,n):
-    p1.pay(n)
+    if p1.pay(n):
+        return True
+    return False
 
 
 def buyProperty(p1,prop):
     if prop.owner == 0:
-        payToBank(p1,prop.cost)
-        prop.owner = p1.num
-        p1.addProperty(prop.num)
-        print(p1.name + ' bought ' + prop.name)
+        if payToBank(p1,prop.cost):
+            prop.owner = p1.num
+            p1.addProperty(prop.num)
+            print(p1.name + ' bought ' + prop.name)
+        return True
     else:
         print('someone already owns that!')
+    return False
 
 def payRent(p1,prop):
     if prop.owner == 0:
         print('no one owns this property')
     else:
-        payPlayer(p1,prop.getRent(),pi[prop.owner])
-        print(p1.name + ' paid $' + str(prop.getRent()) + ' to ' + pi[prop.owner].name)
+        if payPlayer(p1,prop.getRent(),pi[prop.owner]):
+            print(p1.name + ' paid $' + str(prop.getRent()) + ' to ' + pi[prop.owner].name)
+            return True
+    return False
 
 def mortgage(prop):
 	if prop.owner < 0:
@@ -189,13 +205,15 @@ def mortgage(prop):
 		prop.owner = -prop.owner
 
 def unmortgage(prop):
-	if prop.owner > 0:
-		print('property is not mortgaged')
-	elif prop.owner == 0:
-		print('no one owns this property')
-	else:
-		prop.owner = -prop.owner
-		payToBank(pi[prop.owner],prop.cost/2)
+    if prop.owner > 0:
+        print('property is not mortgaged')
+    elif prop.owner == 0:
+        print('no one owns this property')
+    else:
+        if payToBank(pi[-prop.owner],prop.cost/2):
+            prop.owner = -prop.owner
+            return True
+    return False
 
 def increaseValue(prop):
 	if prop.owner in range(1,len(pi)):
@@ -244,15 +262,19 @@ def calcHouseCost(prop,n):
 		
 def buyHouses(prop,n):
     if prop.owner in range(1,len(pi)):
-        increaseValueBy(prop,n)
         cost = calcHouseCost(prop,n)
-        payToBank(pi[prop.owner],cost)
-        print(pi[prop.owner].name +' bought '+ str(n) +' house(s) on '+ prop.name +' for $'+ str(cost))
+        if payToBank(pi[prop.owner],cost):
+            increaseValueBy(prop,n)
+            print(pi[prop.owner].name +' bought '+ str(n) +' house(s) on '+ prop.name +' for $'+ str(cost))
+            return True
     else:
         print("you don't own this property")
+    return False
 
 def buyHouse(prop):
-	buyHouses(prop,1)
+    if buyHouses(prop,1):
+        return True
+    return False
 
 def sellHouses(prop,n):
     if prop.owner in range(1,len(pi)):
@@ -286,6 +308,12 @@ def test():
     print(prop[1].getInfo())
     resetValue(prop[1])
     print(prop[1].getInfo())
+    
+    
+    
+    while payRent(pi[2],prop[6]):
+        displayPlayers()
+    displayPlayers()
 	
 
 test()
