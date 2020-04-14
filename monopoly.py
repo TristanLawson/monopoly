@@ -6,23 +6,30 @@ Created on Sat Apr 11 10:19:23 2020
 """
 '''
 NEW
+_ bankrupcy booleans
+_ chance deck
+_ drawChance()
+_ start display cleaned up
+_ allToPlayer() - just passGO
 
 IN PROCESS
-_ change payments to booleans in case of bankrupcy
+
 TODO
-_ accept negative values? for savings but then mortgage up to 0
+_ allToProp (for interaction)
 _ !bankrupcy!
-_ add monopoly chance cards
+_ create modules to import (ie clean up this mess)
+_ booleans for all invalids
 _ throw exceptions
-_ thorough security - either use boolean returns or throw exceptions
-_ number to player, number to property (for interaction)
 _ printing at all transactions
 '''
-
+import random as r
 
 #GLOBAL VARS
 pi = []
 prop = [0]*23
+chance = [0]*32
+special = [0]*3
+chanceIndex = 0
 
 #CLASSES
 class Player(object):
@@ -32,6 +39,9 @@ class Player(object):
         self.name = playerName
         self.properties = [0]*23
         self.savings = 1500
+    
+    def isPlayer(self):
+        return True
     
     def pay(self,n):
         if n<0:
@@ -104,7 +114,162 @@ class Property(object):
         else:
             return info + '\nRent is $'+ str(self.getRent())
 
+class Chance(object):
+    
+    def __init__(self,num,phrase):
+        self.num = num
+        self.phrase = phrase
+    
+    def printArt(self):
+        print(
+' ______________________\n'+
+'|         ____         |\n'+
+'|        /    \        |\n'+
+'|           __/        |\n'+
+'|          |           |\n'+
+'|          o           |\n'+
+'|----------------------|')
+        lines = formatString(self.phrase)
+        for l in range(len(lines)):
+            print(lines[l])
+        print(
+'|______________________|')
+
+def stringToLines(string):
+    word = string.split()
+    lines = []
+    w = 0
+    l = 0
+    lines.append('')
+    while w < len(word):
+        if len(lines[l])+len(word[w])+1 <= 22:
+            lines[l] = lines[l] + ' ' + word[w]
+            w += 1
+        else:
+            lines.append('')
+            l += 1
+    return lines
+
+def formatLine(line):
+    while len(line) < 22:
+        if len(line) == 21:
+            line = line + ' '
+        else:
+            line = ' ' + line + ' '
+    line = '|' + line + '|'
+    return line
+
+def formatString(string):
+    lines = stringToLines(string)
+    for l in range(len(lines)):
+        lines[l] = formatLine(lines[l])
+    return lines
+   
 #METHODS
+def nameToPlayer(name):
+    for i in range(1,len(pi)):
+        if name == str(pi[i].name):
+            return pi[i]
+    return False
+
+def numToPlayer(num):
+    if num in range(1,len(pi)):
+        return pi[num]
+    return False
+
+def allToPlayer(anyForm):
+    if type(anyForm) == int:
+        return numToPlayer(anyForm)
+    elif type(anyForm) == str:
+        return nameToPlayer(anyForm)
+    elif isinstance(anyForm,Player):
+        return anyForm
+    return False
+
+def initChance():
+    global chanceIndex
+    initChanceCards()
+    shuffleChanceCards()
+    chanceIndex = 0
+
+def initChanceCards():
+    chance[0] = Chance(0,'Advance to GO.')
+    chance[1] = Chance(1,'Advance to Illinois Avenue. If you pass GO, collect $200.')
+    chance[2] = Chance(2,'Advance to St.Charles Place. If you pass GO, collect $200.')
+    chance[3] = Chance(3,'Bank pays you a dividend of $50.')
+    chance[4] = Chance(4,'Get out of jail free. This card may be kept until needed, or sold/traded.')
+    chance[5] = Chance(5,'Go back three spaces.')
+    chance[6] = Chance(6,'Go to jail. Do not pass GO, do not collect $200.')
+    chance[7] = Chance(7,'Make general repairs on your properties: for each house pay $25.')
+    chance[8] = Chance(8,'Speeding fine $15.')
+    chance[9] = Chance(9,'Take a stroll on the Boardwalk. Advance to Boardwalk.')
+    chance[10]= Chance(10,'You have been elected chairman of the board. Pay each player $50.')
+    chance[11]= Chance(11,'Your building loan matures. Receive $150.')
+    chance[12]= Chance(12,'You won a crossword competition! Collect $100.')
+    chance[13]= Chance(13,'Advance to Marvin Gardens. If you pass GO, collect $200.')
+    chance[14]= Chance(14,'Wrong train! Roll one die and move backwards.')
+    chance[15]= Chance(15,'Advance to GO.')
+    chance[16]= Chance(16,'Bank error in your favor! Collect $200.')
+    chance[17]= Chance(17,'Attempt tax fraud. If you roll 1 or 2, collect $50. Otherwise, go to jail.')
+    chance[18]= Chance(18,'Renovation. Pay $50.')
+    chance[19]= Chance(19,'You bought another house. Pay $100 in extra maintenance.')
+    chance[20]= Chance(20,'Go to jail. Do not pass GO, do not collect $200.')
+    chance[21]= Chance(21,'Get out of jail free. This card may be kept until needed, or sold/traded.')
+    chance[22]= Chance(22,'Grand Opera Night. Collect $50 from every player for opening night seats.')
+    chance[23]= Chance(23,'Your cat scratched all your furniture! Pay $75.')
+    chance[24]= Chance(24,'Xmas gift! Receive $100.')
+    chance[25]= Chance(25,'Income tax refund. Collect $20.')
+    chance[26]= Chance(26,'Your cat died. Collect life insurance of 20 kibbles and $5.')
+    chance[27]= Chance(27,'Featured on Home Renovation. Upgrade one of your properties for free.')
+    chance[28]= Chance(28,'You won a participation award in a beauty contest. Collect $10.')
+    chance[29]= Chance(29,'You inherited $100.')
+    chance[30]= Chance(30,'Buy a dog on the internet. Pay $40.')
+    chance[31]= Chance(31,'FIRE! Your nearest building burns down. Remove all houses. Receive $25 in insurance for each house.')
+    
+    special[0]= Chance(32,'-----<YOU DIED>----- Return your properties to the bank and write a will. Your savings will be divided amongst the remaining players accordingly.')
+    special[1]= Chance(33,'---<TORNADO HITS>--- Remove one house from every property on the street. All players on the street lose a turn.')
+    special[2]= Chance(34,'---<HIRED HITMAN>--- Pay $200. Pick a player: if you roll 6, that player dies. All valuables go to the bank. If you roll a 1,2 or 3, go to jail.')
+
+def shuffleChanceCards():
+    #shuffle decks
+    shuffle(chance,100)
+    shuffle(special,5)
+    #place specials in last 3 spots
+    chance.append(special[0])
+    chance.append(special[1])
+    chance.append(special[2])
+    #shuffle specials into deck, spread out
+    spot = r.randint(10,13)
+    swap(chance,spot,32)
+    spot = r.randint(16,19)
+    swap(chance,spot,33)
+    spot = r.randint(22,25)
+    swap(chance,spot,34)
+    
+def shuffle(cards,n):
+    MAX = len(cards)-1
+    for i in range(n):
+        a = r.randint(0,MAX)
+        b = r.randint(0,MAX)
+        cards = swap(cards,a,b)
+    return cards
+
+def swap(cards,a,b):
+    temp = cards[a]
+    cards[a] = cards[b]
+    cards[b] = temp
+    return cards
+
+def drawChance():
+    global chance,chanceIndex
+    chance[chanceIndex].printArt()
+    chanceIndex += 1
+    if chanceIndex >= 35:
+        chance = [0]*32
+        initChance()
+    
+    
+
 def initProperties():
     prop[1] = Property( 1, 'Mediterranean Avenue',  0, 0,  60, [ 70,130,220,370, 750])
     prop[2] = Property( 2, 'Baltic Avenue',         0, 0,  60, [ 70,130,220,370, 750])
@@ -129,14 +294,21 @@ def initProperties():
     prop[21]= Property(21, 'Park Place',            0, 0, 350, [270,360,510,740,1500])
     prop[22]= Property(22, 'Boardwalk',             0, 0, 400, [300,400,560,810,1600])
 
-def initGame():
+def startGame():
     initProperties()
-    addPlayer('the Bank')	
+    initChance()
+    addPlayer('the Bank')
+    print(
+'                               __\n'+
+' //\/\\\   // \\\  |\||  // \\\  ||_|  // \\\  ||    \\\//  \n'+
+'//    \\\  \\\ //  ||\|  \\\ //  ||    \\\ //  ||__   ||   ')
+    print('\n> use addPlayer("name") to add each person')
 
 def addPlayer(name):
     k = len(pi)
     pi.append(Player(k,name))
-    print(name + ' is player ' + str(k))
+    if k != 0:
+        print(name + ' is player ' + str(k))
 
 def displayPlayers():
     print('---------------------------------')
@@ -288,32 +460,31 @@ def sellHouses(prop,n):
 def sellHouse(prop):
 	sellHouses(prop,1)
 	
-def passGO(p1):
-    receiveFromBank(p1,200)
+def passGO(anyForm):
+    p1 = allToPlayer(anyForm)
+    if isinstance(p1,Player):
+        receiveFromBank(p1,200)
+        print(p1.name +' passed GO')
+        return True
+    print('invalid player')
+    return False
+    
+    
+    
 	
 #MAIN
 def test():
-    initGame()
-    
+    startGame()
     addPlayer('Gilly')
     addPlayer('Zander')
     addPlayer('Tristan')
-    
-    buyProperty(pi[1],prop[1])
-    buyProperty(pi[1],prop[5])
-    buyProperty(pi[1],prop[6])
-    
-    print(prop[1].getInfo())
-    buyHouse(prop[1])
-    print(prop[1].getInfo())
-    resetValue(prop[1])
-    print(prop[1].getInfo())
-    
-    
-    
-    while payRent(pi[2],prop[6]):
-        displayPlayers()
     displayPlayers()
-	
-
+    
+    passGO(1)
+    passGO(4)
+    passGO('Gilly')
+    passGO('tristan')
+    passGO(pi[0])
+    passGO(pi[2])
 test()
+    
