@@ -6,20 +6,20 @@ Created on Sat Apr 11 10:19:23 2020
 """
 '''
 NEW
-_ bankrupcy booleans
-_ chance deck
-_ drawChance()
-_ start display cleaned up
-_ allToPlayer() - just passGO
+_ InsufficientFunds() exception
+_ PropertyIssue() exception
+_ allToProp (for interaction)
+_ setOwner(p1)
 
 IN PROCESS
+_ InputError() exception
+_ implement allToProp and allToPlayer
+_ implement setOwner(p1) over prop.owner
 
 TODO
-_ allToProp (for interaction)
 _ !bankrupcy!
 _ create modules to import (ie clean up this mess)
-_ booleans for all invalids
-_ throw exceptions
+-> draw map of methods, classes, inheritance, etc.
 _ printing at all transactions
 '''
 import random as r
@@ -32,6 +32,18 @@ special = [0]*3
 chanceIndex = 0
 
 #CLASSES
+class InsufficientFunds(Exception):
+    def __init__(self,msg):
+        super().__init__(msg)
+
+class InputError(Exception):
+    def __init__(self,msg):
+        super().__init__(msg)
+
+class PropertyIssue(Exception):
+    def __init__(self,msg):
+        super().__init__(msg)
+
 class Player(object):
     
     def __init__(self,playerNum,playerName):
@@ -40,23 +52,17 @@ class Player(object):
         self.properties = [0]*23
         self.savings = 1500
     
-    def isPlayer(self):
-        return True
-    
     def pay(self,n):
         if n<0:
-            print('invalid number')
-            return False
+            raise InputError('payment of n < 0')
         elif self.savings-n < 0:
-            print('cannot make payment')
-            return False
+            raise InsufficientFunds(self.name +' cannot make payment')
         else:
             self.savings -= n
-            return True
             
     def receive(self,n):
         if n<0:
-            print('invalid number')
+            raise InputError('receipt of n < 0')
         else:
             self.savings += n
     
@@ -64,7 +70,7 @@ class Player(object):
         if p in range(1,23):
             self.properties[p] = 1
         else:
-            print('invalid property number')
+            raise InputError('invalid property number')
             
     def getPropertyList(self):
         propList = []
@@ -82,8 +88,6 @@ class Player(object):
 
 class Property(object):
     
-    houseCost = [50,100,150,200]
-    
     def __init__(self,num,pName,ownedBy,value,cost,rent):
         self.num = num
         self.name = pName
@@ -91,21 +95,45 @@ class Property(object):
         self.val = value
         self.cost = cost
         self.rent = rent
+        if num in range(1,6):
+            self.houseCost = 50
+        elif num in range(6,12):
+            self.houseCost = 100
+        elif num in range(12,18):
+            self.houseCost = 150
+        elif num in range(18,23):
+            self.houseCost = 200
+        else:
+            raise InputError(str(num) +' is not a valid property number')
     
     def changeVal(self,n):
-        if 0 <= self.val+n and self.val+n <= 4:
+        if self.val+n in range(5):
             self.val += n
         else:
-            print('invalid property value')
+            raise InputError('invalid property value')
             
     def setVal(self,n):
-        if 0 <= n and n <= 4: 
+        if n in range(5): 
             self.val = n
         else:
-            print('invalid property value')
+            raise InputError('invalid property value')
+    
+    def setOwner(self,pn):
+        if pn in range(len(pi)):
+            if self.owner < 0:
+                self.owner = -pn
+                print(pi[pn].name +' now owns mortgaged property '+ self.name)
+            else:
+                self.owner = pn
+                print(pi[pn].name +' now owns property '+ self.name)
+        else:
+            raise InputError('not a valid player input')
     
     def getRent(self):
         return self.rent[self.val]
+    
+    def getHouseCost(self,n):
+        return self.houseCost*n
 	
     def getInfo(self):
         info = self.name +' is owned by '+ pi[self.owner].name
@@ -166,17 +194,23 @@ def formatString(string):
     return lines
    
 #METHODS
+
+##INPUT PARSING
+    #private
 def nameToPlayer(name):
     for i in range(1,len(pi)):
         if name == str(pi[i].name):
             return pi[i]
-    return False
+    raise InputError(str(name) +' is not a valid player')
 
+    #private
 def numToPlayer(num):
     if num in range(1,len(pi)):
         return pi[num]
-    return False
+    else:
+        raise InputError(str(num) +' is not a valid player')
 
+    #private
 def allToPlayer(anyForm):
     if type(anyForm) == int:
         return numToPlayer(anyForm)
@@ -184,14 +218,36 @@ def allToPlayer(anyForm):
         return nameToPlayer(anyForm)
     elif isinstance(anyForm,Player):
         return anyForm
-    return False
+    else:
+        raise InputError(str(anyForm) +' is not a valid player')
 
+    #private
+def numToProp(num):
+    if num in range(1,23):
+        return prop[num]
+    else:
+        raise InputError(str(num) +' is not a valid property')
+
+    #private
+def allToProp(anyForm):
+    if type(anyForm) == int:
+        return numToProp
+    elif isinstance(anyForm,Property):
+        return anyForm
+    else:
+        raise InputError(str(anyForm) +' is not a valid property')
+
+##INITIALIZATION
+
+###CHANCE
+    #private
 def initChance():
     global chanceIndex
     initChanceCards()
     shuffleChanceCards()
     chanceIndex = 0
 
+    #private
 def initChanceCards():
     chance[0] = Chance(0,'Advance to GO.')
     chance[1] = Chance(1,'Advance to Illinois Avenue. If you pass GO, collect $200.')
@@ -230,6 +286,7 @@ def initChanceCards():
     special[1]= Chance(33,'---<TORNADO HITS>--- Remove one house from every property on the street. All players on the street lose a turn.')
     special[2]= Chance(34,'---<HIRED HITMAN>--- Pay $200. Pick a player: if you roll 6, that player dies. All valuables go to the bank. If you roll a 1,2 or 3, go to jail.')
 
+    #private
 def shuffleChanceCards():
     #shuffle decks
     shuffle(chance,100)
@@ -246,6 +303,7 @@ def shuffleChanceCards():
     spot = r.randint(22,25)
     swap(chance,spot,34)
     
+    #private
 def shuffle(cards,n):
     MAX = len(cards)-1
     for i in range(n):
@@ -253,23 +311,19 @@ def shuffle(cards,n):
         b = r.randint(0,MAX)
         cards = swap(cards,a,b)
     return cards
-
+    
+    #private
 def swap(cards,a,b):
     temp = cards[a]
     cards[a] = cards[b]
     cards[b] = temp
     return cards
 
-def drawChance():
-    global chance,chanceIndex
-    chance[chanceIndex].printArt()
-    chanceIndex += 1
-    if chanceIndex >= 35:
-        chance = [0]*32
-        initChance()
-    
-    
 
+    
+###PROPERTIES
+        
+    #private
 def initProperties():
     prop[1] = Property( 1, 'Mediterranean Avenue',  0, 0,  60, [ 70,130,220,370, 750])
     prop[2] = Property( 2, 'Baltic Avenue',         0, 0,  60, [ 70,130,220,370, 750])
@@ -294,6 +348,9 @@ def initProperties():
     prop[21]= Property(21, 'Park Place',            0, 0, 350, [270,360,510,740,1500])
     prop[22]= Property(22, 'Boardwalk',             0, 0, 400, [300,400,560,810,1600])
 
+##GAMEPLAY
+    
+    #public
 def startGame():
     initProperties()
     initChance()
@@ -303,7 +360,8 @@ def startGame():
 ' //\/\\\   // \\\  |\||  // \\\  ||_|  // \\\  ||    \\\//  \n'+
 '//    \\\  \\\ //  ||\|  \\\ //  ||    \\\ //  ||__   ||   ')
     print('\n> use addPlayer("name") to add each person')
-
+    
+    #public
 def addPlayer(name):
     k = len(pi)
     pi.append(Player(k,name))
@@ -330,146 +388,142 @@ def displayPropertiesOf(p1):
     for i in range(len(plist)):
         print(plist[i])
 
-def payPlayer(p1,n,p2):
-    if p1.pay(n):
-        p2.receive(n)
-        return True
-    else:
-        print('payment failed')
-    return False
+    #public
+def drawChance():
+    global chance,chanceIndex
+    chance[chanceIndex].printArt()
+    chanceIndex += 1
+    if chanceIndex >= 35:
+        chance = [0]*32
+        initChance()
 
+    #public
+def passGO(anyForm):
+    p1 = allToPlayer(anyForm)
+    receiveFromBank(p1,200)
+    print(p1.name +' passed GO')
+
+##PAYMENT
+
+    #public
+def payPlayer(p1,n,p2):
+    p1.pay(n)
+    p2.receive(n)
+
+    #public
+def payToBank(p1,n):
+    p1.pay(n)
+
+    #public
 def receiveFromBank(p1,n):
     p1.receive(n)
 
-def payToBank(p1,n):
-    if p1.pay(n):
-        return True
-    return False
+##PROPERTIES
 
-
+    #public
 def buyProperty(p1,prop):
     if prop.owner == 0:
-        if payToBank(p1,prop.cost):
-            prop.owner = p1.num
-            p1.addProperty(prop.num)
-            print(p1.name + ' bought ' + prop.name)
-        return True
+        payToBank(p1,prop.cost)
+        prop.owner = p1.num
+        p1.addProperty(prop.num)
+        print(p1.name + ' bought ' + prop.name)
     else:
-        print('someone already owns that!')
-    return False
+        raise PropertyIssue(pi[abs(prop.owner)].name +' already owns that')
 
+    #public
 def payRent(p1,prop):
-    if prop.owner == 0:
-        print('no one owns this property')
+    if prop.owner in range(1,len(pi)):
+        payPlayer(p1,prop.getRent(),pi[prop.owner])
+        print(p1.name + ' paid $' + str(prop.getRent()) + ' to ' + pi[prop.owner].name)
+    elif prop.owner == 0:
+        raise PropertyIssue('No one owns this property')
+    elif prop.owner < 0:
+        raise PropertyIssue('Property is mortgaged by '+ pi[abs(prop.owner)].name)
     else:
-        if payPlayer(p1,prop.getRent(),pi[prop.owner]):
-            print(p1.name + ' paid $' + str(prop.getRent()) + ' to ' + pi[prop.owner].name)
-            return True
-    return False
+        raise Exception('Invalid property owner. Change property.owner')
 
+    #public
 def mortgage(prop):
-	if prop.owner < 0:
-		print('property already mortgaged')
-	elif prop.owner == 0:
-		print('no one owns this property')
-	else:
-		receiveFromBank(pi[prop.owner],prop.cost/2)
-		prop.owner = -prop.owner
+    if prop.owner in range(1,len(pi)):
+        receiveFromBank(pi[prop.owner],prop.cost/2)
+        prop.owner = -prop.owner
+    elif prop.owner == 0:
+        raise PropertyIssue('no one owns this property')
+    elif prop.owner < 0:
+        raise PropertyIssue('property already mortgaged')
+    else:
+        raise Exception('Invalid property owner. Change property.owner')
 
+    #public
 def unmortgage(prop):
     if prop.owner > 0:
-        print('property is not mortgaged')
+        raise PropertyIssue('property is not mortgaged')
     elif prop.owner == 0:
-        print('no one owns this property')
+        raise PropertyIssue('no one owns this property')
     else:
-        if payToBank(pi[-prop.owner],prop.cost/2):
-            prop.owner = -prop.owner
-            return True
-    return False
-
+        payToBank(pi[-prop.owner],prop.cost/2)
+        prop.owner = -prop.owner
+    
+    #public
 def increaseValue(prop):
-	if prop.owner in range(1,len(pi)):
-		prop.changeVal(1)
-	else:
-		print("you don't own this property")
+	increaseValueBy(prop,1)
 
+    #public
 def increaseValueBy(prop,n):
 	if prop.owner in range(1,len(pi)):
 		prop.changeVal(n)
 	else:
-		print("you don't own this property")
+		raise PropertyIssue("you don't own this property")
 
+    #public
 def decreaseValue(prop):
-	if prop.owner in range(1,len(pi)):
-		prop.changeVal(-1)
-	else:
-		print("you don't own this property")
+	decreaseValueBy(prop,1)
 
+    #public
 def decreaseValueBy(prop,n):
 	if prop.owner in range(1,len(pi)):
 		prop.changeVal(-n)
 	else:
-		print("you don't own this property")
-
+		raise PropertyIssue("you don't own this property")
+    
+    #public
 def resetValue(prop):
 	if prop.owner in range(1,len(pi)):
 		prop.setVal(0)
 	else:
-		print("you don't own this property")
+		raise PropertyIssue("you don't own this property")
 
-def calcHouseCost(prop,n):
-    cost = 0
-    if prop.num in range(1,6):
-        cost = n*prop.houseCost[0]
-    elif prop.num in range(6,12):
-        cost = n*prop.houseCost[1]
-    elif prop.num in range(12,18):
-        cost = n*prop.houseCost[2]
-    elif prop.num in range(18,23):
-        cost = n*prop.houseCost[3]
-    else:
-        #throw property number exception
-        print('invalid property')
-    return cost
-		
+    #public
 def buyHouses(prop,n):
     if prop.owner in range(1,len(pi)):
-        cost = calcHouseCost(prop,n)
-        if payToBank(pi[prop.owner],cost):
-            increaseValueBy(prop,n)
-            print(pi[prop.owner].name +' bought '+ str(n) +' house(s) on '+ prop.name +' for $'+ str(cost))
-            return True
+        cost = prop.getHouseCost(n)
+        payToBank(pi[prop.owner],cost)
+        increaseValueBy(prop,n)
+        print(pi[prop.owner].name +' bought '+ str(n) +' house(s) on '+ prop.name +' for $'+ str(cost))
     else:
-        print("you don't own this property")
-    return False
+        raise PropertyIssue("you don't own this property")
 
+    #public
 def buyHouse(prop):
-    if buyHouses(prop,1):
-        return True
-    return False
+    buyHouses(prop,1)
 
+    #public
 def sellHouses(prop,n):
     if prop.owner in range(1,len(pi)):
         decreaseValueBy(prop,n)
-        value = int(calcHouseCost(prop,n)/2)
+        value = int(prop.getHouseCost(n)/2)
         receiveFromBank(pi[prop.owner],value)
         print(pi[prop.owner].name +' sold '+ str(n) +' house(s) on '+ prop.name +' for $'+ str(value))
     else:
-        print("you don't own this property")
+        raise PropertyIssue("you don't own this property")
 
+    #public
 def sellHouse(prop):
 	sellHouses(prop,1)
-	
-def passGO(anyForm):
-    p1 = allToPlayer(anyForm)
-    if isinstance(p1,Player):
-        receiveFromBank(p1,200)
-        print(p1.name +' passed GO')
-        return True
-    print('invalid player')
-    return False
+
+
     
-    
+
     
 	
 #MAIN
@@ -479,12 +533,5 @@ def test():
     addPlayer('Zander')
     addPlayer('Tristan')
     displayPlayers()
-    
-    passGO(1)
-    passGO(4)
-    passGO('Gilly')
-    passGO('tristan')
-    passGO(pi[0])
-    passGO(pi[2])
-test()
+
     
