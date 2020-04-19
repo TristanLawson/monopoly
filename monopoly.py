@@ -8,10 +8,8 @@ Created on Sat Apr 11 10:19:23 2020
 NEW
     TESTED
 _ addPlayer(name) prevents name duplicates
-_ InsufficientFunds() exception
-_ PropertyIssue() exception
-_ InputError() exception
-_ implement allToProp and allToPlayer
+_ added InsufficientFunds(), PropertyIssue(), InputError() exceptions
+_ implemented allToProp and allToPlayer
 _ prop.setOwner(p1)
 _ changeOwner(p1,prop)
     UNTESTED
@@ -19,13 +17,21 @@ _ changeOwner(p1,prop)
 IN PROCESS
 
 TODO
-_ !bankrupcy!
+    PLAYABILITY
+_ what happens to bankrupt players?
+_ printing at all transactions
 _ removePlayer() <- adjust index for all players
+_ detailed exception messages
+    CODE
 _ prop.getOwnerName()
 _ prop.getOwner() should return Player, not Player.num
+_ add exceptions for all cases (every method should be 100% secure)
+    ORGANIZATION
+_ create separate module chance
+_ organize initialization methods (lines 298-408)
 _ create modules to import (ie clean up this mess)
 -> draw map of methods, classes, inheritance, etc.
-_ printing at all transactions
+
 '''
 import random as r
 
