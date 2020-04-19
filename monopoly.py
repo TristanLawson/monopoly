@@ -6,18 +6,23 @@ Created on Sat Apr 11 10:19:23 2020
 """
 '''
 NEW
+    TESTED
+_ addPlayer(name) prevents name duplicates
 _ InsufficientFunds() exception
 _ PropertyIssue() exception
-_ allToProp (for interaction)
-_ setOwner(p1)
-
-IN PROCESS
 _ InputError() exception
 _ implement allToProp and allToPlayer
-_ implement setOwner(p1) over prop.owner
+_ prop.setOwner(p1)
+_ changeOwner(p1,prop)
+    UNTESTED
+
+IN PROCESS
 
 TODO
 _ !bankrupcy!
+_ removePlayer() <- adjust index for all players
+_ prop.getOwnerName()
+_ prop.getOwner() should return Player, not Player.num
 _ create modules to import (ie clean up this mess)
 -> draw map of methods, classes, inheritance, etc.
 _ printing at all transactions
@@ -47,11 +52,12 @@ class PropertyIssue(Exception):
 class Player(object):
     
     def __init__(self,playerNum,playerName):
-        self.num = playerNum
-        self.name = playerName
-        self.properties = [0]*23
-        self.savings = 1500
+        self.num = playerNum        #dnc
+        self.name = playerName      #dnc
+        self.savings = 1500         #change
+        self.properties = [0]*23    #change
     
+    #CHANGE ATTRIBUTES
     def pay(self,n):
         if n<0:
             raise InputError('payment of n < 0')
@@ -59,7 +65,7 @@ class Player(object):
             raise InsufficientFunds(self.name +' cannot make payment')
         else:
             self.savings -= n
-            
+    
     def receive(self,n):
         if n<0:
             raise InputError('receipt of n < 0')
@@ -71,7 +77,23 @@ class Player(object):
             self.properties[p] = 1
         else:
             raise InputError('invalid property number')
-            
+    
+    def removeProperty(self,p):
+        if p in range(1,23):
+            self.properties[p] = 0
+        else:
+            raise InputError('invalid property number')
+    
+    #INFO
+    def getName(self):
+        return self.name
+    
+    def getNum(self):
+        return self.num
+    
+    def getSavings(self):
+        return self.savings
+    
     def getPropertyList(self):
         propList = []
         for p in range(1,22):
@@ -88,57 +110,87 @@ class Player(object):
 
 class Property(object):
     
-    def __init__(self,num,pName,ownedBy,value,cost,rent):
-        self.num = num
-        self.name = pName
-        self.owner = ownedBy
-        self.val = value
-        self.cost = cost
-        self.rent = rent
-        if num in range(1,6):
-            self.houseCost = 50
-        elif num in range(6,12):
-            self.houseCost = 100
-        elif num in range(12,18):
-            self.houseCost = 150
-        elif num in range(18,23):
-            self.houseCost = 200
-        else:
-            raise InputError(str(num) +' is not a valid property number')
+    def __init__(self,num,name,owner,cost,houseCost,val,rent):
+        self.num = num              #dnc
+        self.name = name            #dnc
+        self.owner = owner          #change
+        self.cost = cost            #dnc
+        self.houseCost = houseCost  #dnc
+        self.val = val              #change
+        self.rent = rent            #dnc
+        self.mortgaged = False      #change
     
-    def changeVal(self,n):
-        if self.val+n in range(5):
-            self.val += n
+    #CHANGE ATTRIBUTES
+    def setOwner(self,pn):
+        if pn in range(len(pi)):
+            self.owner = pn
+            if self.mortgaged:
+                print(pi[pn].name +' now owns mortgaged property '+ self.name)
+                if pn == 0:
+                    self.mortgaged = False
+            else:
+                print(pi[pn].name +' now owns property '+ self.name)
         else:
-            raise InputError('invalid property value')
+            raise InputError('not a valid player input')
             
     def setVal(self,n):
         if n in range(5): 
             self.val = n
         else:
             raise InputError('invalid property value')
-    
-    def setOwner(self,pn):
-        if pn in range(len(pi)):
-            if self.owner < 0:
-                self.owner = -pn
-                print(pi[pn].name +' now owns mortgaged property '+ self.name)
-            else:
-                self.owner = pn
-                print(pi[pn].name +' now owns property '+ self.name)
+            
+    def changeVal(self,n):
+        if self.val+n in range(5):
+            self.val += n
         else:
-            raise InputError('not a valid player input')
+            raise InputError('invalid property value')
     
-    def getRent(self):
-        return self.rent[self.val]
+    def mortgage(self):
+        if self.mortgaged:
+            raise PropertyIssue('property is already mortgaged')
+        else:
+            self.mortgaged = True
+            
+    def unMortgage(self):
+        if self.mortgaged:
+            self.mortgaged = False
+        else:
+            raise PropertyIssue('property was not mortgaged')
+    
+    #INFO
+    def getNum(self):
+        return self.num
+    
+    def getName(self):
+        return self.name
+    
+    def getOwner(self):
+        return self.owner
+    
+    def getCost(self):
+        return self.cost
     
     def getHouseCost(self,n):
         return self.houseCost*n
+    
+    def getValue(self):
+        return self.val
+    
+    def getRent(self):
+        if self.mortgaged:
+            return 0
+        else:
+            return self.rent[self.val]
 	
+    def isMortaged(self):
+        return self.mortgaged
+    
     def getInfo(self):
         info = self.name +' is owned by '+ pi[self.owner].name
         if self.owner == 0:
             return info + '\nBuy for $'+ str(self.cost)
+        elif self.mortgaged:
+            return info + '\nCurrently mortgaged'
         else:
             return info + '\nRent is $'+ str(self.getRent())
 
@@ -231,7 +283,7 @@ def numToProp(num):
     #private
 def allToProp(anyForm):
     if type(anyForm) == int:
-        return numToProp
+        return numToProp(anyForm)
     elif isinstance(anyForm,Property):
         return anyForm
     else:
@@ -324,29 +376,29 @@ def swap(cards,a,b):
 ###PROPERTIES
         
     #private
-def initProperties():
-    prop[1] = Property( 1, 'Mediterranean Avenue',  0, 0,  60, [ 70,130,220,370, 750])
-    prop[2] = Property( 2, 'Baltic Avenue',         0, 0,  60, [ 70,130,220,370, 750])
-    prop[3] = Property( 3, 'Oriental Avenue',       0, 0, 100, [ 80,140,240,410, 800])
-    prop[4] = Property( 4, 'Vermont Avenue',        0, 0, 100, [ 80,140,240,410, 800])
-    prop[5] = Property( 5, 'Connecticut Avenue',    0, 0, 120, [100,160,260,440, 860])
-    prop[6] = Property( 6, 'St. Charles Place',     0, 0, 140, [110,180,290,460, 900])
-    prop[7] = Property( 7, 'States Avenue',         0, 0, 140, [110,180,290,460, 900])
-    prop[8] = Property( 8, 'Virginia Avenue',       0, 0, 160, [130,200,310,490, 980])
-    prop[9] = Property( 9, 'St. James Place',       0, 0, 180, [140,210,330,520,1000])
-    prop[10]= Property(10, 'Tennessee Avenue',      0, 0, 180, [140,210,330,520,1000])
-    prop[11]= Property(11, 'New York Avenue',       0, 0, 200, [160,230,350,550,1100])
-    prop[12]= Property(12, 'Kentucky Avenue',       0, 0, 220, [170,250,380,580,1160])
-    prop[13]= Property(13, 'Indiana Avenue',        0, 0, 220, [170,250,380,580,1160])
-    prop[14]= Property(14, 'Illinois Avenue',       0, 0, 240, [190,270,400,610,1200])
-    prop[15]= Property(15, 'Atlantic Avenue',       0, 0, 260, [200,280,420,640,1300])
-    prop[16]= Property(16, 'Ventnor Avenue',        0, 0, 260, [200,280,420,640,1300])
-    prop[17]= Property(17, 'Marvin Gardens',        0, 0, 280, [220,300,440,670,1340])
-    prop[18]= Property(18, 'Pacific Avenue',        0, 0, 300, [230,320,460,700,1400])
-    prop[19]= Property(19, 'North Carolina Avenue', 0, 0, 300, [230,320,460,700,1400])
-    prop[20]= Property(20, 'Pennsylvania Avenue',   0, 0, 320, [250,340,480,730,1440])
-    prop[21]= Property(21, 'Park Place',            0, 0, 350, [270,360,510,740,1500])
-    prop[22]= Property(22, 'Boardwalk',             0, 0, 400, [300,400,560,810,1600])
+def initProperties(): #num  name                 owner cost  hc val  rent
+    prop[1] = Property( 1, 'Mediterranean Avenue',  0,  60,  50, 0, [ 70,130,220,370, 750])
+    prop[2] = Property( 2, 'Baltic Avenue',         0,  60,  50, 0, [ 70,130,220,370, 750])
+    prop[3] = Property( 3, 'Oriental Avenue',       0, 100,  50, 0, [ 80,140,240,410, 800])
+    prop[4] = Property( 4, 'Vermont Avenue',        0, 100,  50, 0, [ 80,140,240,410, 800])
+    prop[5] = Property( 5, 'Connecticut Avenue',    0, 120,  50, 0, [100,160,260,440, 860])
+    prop[6] = Property( 6, 'St. Charles Place',     0, 140, 100, 0, [110,180,290,460, 900])
+    prop[7] = Property( 7, 'States Avenue',         0, 140, 100, 0, [110,180,290,460, 900])
+    prop[8] = Property( 8, 'Virginia Avenue',       0, 160, 100, 0, [130,200,310,490, 980])
+    prop[9] = Property( 9, 'St. James Place',       0, 180, 100, 0, [140,210,330,520,1000])
+    prop[10]= Property(10, 'Tennessee Avenue',      0, 180, 100, 0, [140,210,330,520,1000])
+    prop[11]= Property(11, 'New York Avenue',       0, 200, 100, 0, [160,230,350,550,1100])
+    prop[12]= Property(12, 'Kentucky Avenue',       0, 220, 150, 0, [170,250,380,580,1160])
+    prop[13]= Property(13, 'Indiana Avenue',        0, 220, 150, 0, [170,250,380,580,1160])
+    prop[14]= Property(14, 'Illinois Avenue',       0, 240, 150, 0, [190,270,400,610,1200])
+    prop[15]= Property(15, 'Atlantic Avenue',       0, 260, 150, 0, [200,280,420,640,1300])
+    prop[16]= Property(16, 'Ventnor Avenue',        0, 260, 150, 0, [200,280,420,640,1300])
+    prop[17]= Property(17, 'Marvin Gardens',        0, 280, 150, 0, [220,300,440,670,1340])
+    prop[18]= Property(18, 'Pacific Avenue',        0, 300, 200, 0, [230,320,460,700,1400])
+    prop[19]= Property(19, 'North Carolina Avenue', 0, 300, 200, 0, [230,320,460,700,1400])
+    prop[20]= Property(20, 'Pennsylvania Avenue',   0, 320, 200, 0, [250,340,480,730,1440])
+    prop[21]= Property(21, 'Park Place',            0, 350, 200, 0, [270,360,510,740,1500])
+    prop[22]= Property(22, 'Boardwalk',             0, 400, 200, 0, [300,400,560,810,1600])
 
 ##GAMEPLAY
     
@@ -364,6 +416,9 @@ def startGame():
     #public
 def addPlayer(name):
     k = len(pi)
+    for i in range(k):
+        if pi[i].getName() == name:
+            raise InputError('name already taken')
     pi.append(Player(k,name))
     if k != 0:
         print(name + ' is player ' + str(k))
@@ -400,106 +455,98 @@ def drawChance():
     #public
 def passGO(anyForm):
     p1 = allToPlayer(anyForm)
-    receiveFromBank(p1,200)
+    p1.receive(200)
     print(p1.name +' passed GO')
 
 ##PAYMENT
 
     #public
-def payPlayer(p1,n,p2):
+def payPlayer(p1in,n,p2in):
+    p1 = allToPlayer(p1in)
+    p2 = allToPlayer(p2in)
     p1.pay(n)
     p2.receive(n)
 
     #public
-def payToBank(p1,n):
+def payToBank(pin,n):
+    p1 = allToPlayer(pin)
     p1.pay(n)
 
     #public
-def receiveFromBank(p1,n):
+def receiveFromBank(pin,n):
+    p1 = allToPlayer(pin)
     p1.receive(n)
 
 ##PROPERTIES
 
     #public
-def buyProperty(p1,prop):
-    if prop.owner == 0:
-        payToBank(p1,prop.cost)
-        prop.owner = p1.num
-        p1.addProperty(prop.num)
+def changeOwner(pin,propin):
+    p1 = allToPlayer(pin)
+    prop = allToProp(propin)
+    prevOwner = prop.getOwner()
+    if prevOwner in range(1,len(pi)):
+        pi[prevOwner].removeProperty(prop.getNum())
+    prop.setOwner(p1.getNum())
+    p1.addProperty(prop.getNum())
+    
+    #public
+def buyProperty(pin,propin):
+    p1 = allToPlayer(pin)
+    prop = allToProp(propin)
+    if prop.getOwner() == 0:
+        p1.pay(prop.cost)
+        prop.setOwner(p1.num)
+        p1.addProperty(prop.getNum())
         print(p1.name + ' bought ' + prop.name)
+    elif prop.getOwner() in range(1,len(pi)):
+        raise PropertyIssue(pi[prop.getOwner()].getName() +' already owns that')
     else:
-        raise PropertyIssue(pi[abs(prop.owner)].name +' already owns that')
+        raise Exception('something went wrong')
 
     #public
-def payRent(p1,prop):
-    if prop.owner in range(1,len(pi)):
-        payPlayer(p1,prop.getRent(),pi[prop.owner])
-        print(p1.name + ' paid $' + str(prop.getRent()) + ' to ' + pi[prop.owner].name)
-    elif prop.owner == 0:
+def payRent(pin,propin):
+    p1 = allToPlayer(pin)
+    prop = allToProp(propin)
+    if prop.mortgaged():
+        raise PropertyIssue('Property is mortgaged by '+ pi[prop.getOwner()].getName())
+    elif prop.getOwner() in range(1,len(pi)):
+        payPlayer(p1,prop.getRent(),pi[prop.getOwner()])
+        print(p1.getName() + ' paid $' + str(prop.getRent()) + ' to ' + pi[prop.getOwner()].getName())
+    elif prop.getOwner() == 0:
         raise PropertyIssue('No one owns this property')
-    elif prop.owner < 0:
-        raise PropertyIssue('Property is mortgaged by '+ pi[abs(prop.owner)].name)
     else:
-        raise Exception('Invalid property owner. Change property.owner')
+        raise Exception('something went wrong')
 
     #public
-def mortgage(prop):
-    if prop.owner in range(1,len(pi)):
-        receiveFromBank(pi[prop.owner],prop.cost/2)
-        prop.owner = -prop.owner
-    elif prop.owner == 0:
-        raise PropertyIssue('no one owns this property')
-    elif prop.owner < 0:
-        raise PropertyIssue('property already mortgaged')
-    else:
-        raise Exception('Invalid property owner. Change property.owner')
-
-    #public
-def unmortgage(prop):
-    if prop.owner > 0:
-        raise PropertyIssue('property is not mortgaged')
-    elif prop.owner == 0:
+def mortgage(propin):
+    prop = allToProp(propin)
+    if prop.getOwner() in range(1,len(pi)):
+        prop.mortgage()
+        receiveFromBank(pi[prop.getOwner()],int(prop.cost/2))
+    elif prop.getOwner() == 0:
         raise PropertyIssue('no one owns this property')
     else:
-        payToBank(pi[-prop.owner],prop.cost/2)
-        prop.owner = -prop.owner
-    
-    #public
-def increaseValue(prop):
-	increaseValueBy(prop,1)
+        raise Exception('something went wrong')
 
     #public
-def increaseValueBy(prop,n):
-	if prop.owner in range(1,len(pi)):
-		prop.changeVal(n)
-	else:
-		raise PropertyIssue("you don't own this property")
+def unmortgage(propin):
+    prop = allToProp(propin)
+    if prop.getOwner() in range(1,len(pi)):
+        prop.unMortgage()
+        payToBank(pi[prop.getOwner()],int(prop.getCost()/2))
+    elif prop.getOwner() == 0:
+        raise PropertyIssue('no one owns this property')
+    else:
+        raise Exception('something went wrong')
 
     #public
-def decreaseValue(prop):
-	decreaseValueBy(prop,1)
-
-    #public
-def decreaseValueBy(prop,n):
-	if prop.owner in range(1,len(pi)):
-		prop.changeVal(-n)
-	else:
-		raise PropertyIssue("you don't own this property")
-    
-    #public
-def resetValue(prop):
-	if prop.owner in range(1,len(pi)):
-		prop.setVal(0)
-	else:
-		raise PropertyIssue("you don't own this property")
-
-    #public
-def buyHouses(prop,n):
-    if prop.owner in range(1,len(pi)):
+def buyHouses(propin,n):
+    prop = allToProp(propin)
+    if prop.getOwner() in range(1,len(pi)):
         cost = prop.getHouseCost(n)
-        payToBank(pi[prop.owner],cost)
-        increaseValueBy(prop,n)
-        print(pi[prop.owner].name +' bought '+ str(n) +' house(s) on '+ prop.name +' for $'+ str(cost))
+        payToBank(pi[prop.getOwner()],cost)
+        prop.changeVal(n)
+        print(pi[prop.getOwner()].name +' bought '+ str(n) +' house(s) on '+ prop.getName() +' for $'+ str(cost))
     else:
         raise PropertyIssue("you don't own this property")
 
@@ -508,12 +555,13 @@ def buyHouse(prop):
     buyHouses(prop,1)
 
     #public
-def sellHouses(prop,n):
-    if prop.owner in range(1,len(pi)):
-        decreaseValueBy(prop,n)
+def sellHouses(propin,n):
+    prop = allToProp(propin)
+    if prop.getOwner() in range(1,len(pi)):
+        prop.changeVal(-n)
         value = int(prop.getHouseCost(n)/2)
-        receiveFromBank(pi[prop.owner],value)
-        print(pi[prop.owner].name +' sold '+ str(n) +' house(s) on '+ prop.name +' for $'+ str(value))
+        receiveFromBank(pi[prop.getOwner()],value)
+        print(pi[prop.getOwner()].name +' sold '+ str(n) +' house(s) on '+ prop.getName() +' for $'+ str(value))
     else:
         raise PropertyIssue("you don't own this property")
 
@@ -521,11 +569,6 @@ def sellHouses(prop,n):
 def sellHouse(prop):
 	sellHouses(prop,1)
 
-
-    
-
-    
-	
 #MAIN
 def test():
     startGame()
@@ -533,5 +576,12 @@ def test():
     addPlayer('Zander')
     addPlayer('Tristan')
     displayPlayers()
+    
+    buyProperty(1,22)
+    changeOwner(2,22)
+    prop[21].setOwner(3)
+
+test()
+
 
     
