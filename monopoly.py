@@ -22,6 +22,7 @@ _ what happens to bankrupt players?
 _ printing at all transactions
 _ removePlayer() <- adjust index for all players
 _ detailed exception messages
+_ write trading method
     CODE
 _ prop.getOwnerName()
 _ prop.getOwner() should return Player, not Player.num
@@ -582,12 +583,6 @@ def test():
     addPlayer('Zander')
     addPlayer('Tristan')
     displayPlayers()
-    
-    buyProperty(1,22)
-    changeOwner(2,22)
-    prop[21].setOwner(3)
-
-test()
 
 
     
