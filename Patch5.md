@@ -15,3 +15,14 @@ Remarks:
 NEXT STEPS
 - organizing and writing user output
 - thoroughly commenting code
+5.3
+- organize & write user output
+- thoroughly commented code
+- .getOwner() now returns Player
+- added .getOwnerNum() and .getOwnerName()
+- added some exceptions to .set and .get for Property and Player classes
+NEXT STEPS
+- implement .getOwner(), .getOwnerName(), .getOwnerNum()
+- print() needs space = '' for printing multiple objects
+- set max name size
+- displayPlayers() should print spaces after each name to hit the right size
