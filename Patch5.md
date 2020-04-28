@@ -26,3 +26,10 @@ NEXT STEPS
 - print() needs space = '' for printing multiple objects
 - set max name size
 - displayPlayers() should print spaces after each name to hit the right size
+5.4
+- use appropriate Property.getOwner() or .getOwnerName() or .getOwnerNum()
+- print() needs space = '' for printing multiple objects
+- set max name size
+- displayPlayers() should print spaces after each name to hit the right size
+NEXT STEPS
+- thoroughly test
