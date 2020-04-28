@@ -33,3 +33,12 @@ NEXT STEPS
 - displayPlayers() should print spaces after each name to hit the right size
 NEXT STEPS
 - thoroughly test
+5.5
+Gameplay test remarks
+- fix net worth calculation
+- consider writing functions that apply to multiple players at once
+- write help() function with list of commands
+- add displayPlayer(pin) to display a single player's attributes
+  (likely in patch-6)
+Functionality test remarks
+- 
