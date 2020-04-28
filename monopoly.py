@@ -1,52 +1,46 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Apr 11 10:19:23 2020
-
+monopoly.py
+patch 5.3
 @author: trist
 """
 '''
 NEW
     TESTED
-_ thoroughly comment code
-_ added some exceptions to .set and .get for Property and Player classes
-_ Property.getOwner() returns Player
-_ Property.getOwnerName()
-_ organize & write user output
 
     UNTESTED
+- use appropriate Property.getOwner() or .getOwnerName() or .getOwnerNum()
+- print() needs space = '' for printing multiple objects
+- set max name size
+- displayPlayers() should print spaces after each name to hit the right size
 
 IN PROCESS
 
 TODO
     Patch5 NEXT STEPS
-_ use appropriate Property.getOwner() or .getOwnerName() or .getOwnerNum()
-_ print() needs space = '' for printing multiple objects
-_ set max name size
-_ displayPlayers() should print spaces after each name to hit the right size
-
+- thoroughly test
     PLAYABILITY
 > what happens to bankrupt players?
-_ bankrupcy calculation... if networth is too low for a transaction
-_ display BANKRUPT in player's savings and net worth
+- bankrupcy calculation... if networth is too low for a transaction
+- display BANKRUPT in player's savings and net worth
 > write/repair functions
-_ networth
-_ displayPropertiesOf(pin)
-_ removePlayer() <- adjust index for all players
-_ trading (with user input?)
+- help()
+- networth
+- displayPropertiesOf(pin)
+- removePlayer() <- adjust index for all players
+- trading (with user input?)
 
     CODE
-_ add isPlayer() to further modulate code (remove error handling from downstream methods)
-_ cast int() at bottlenecks (instead of everywhere else)
-_ init normal chance cards into normal[],
+- add isPlayer() to further modulate code (remove error handling from downstream methods)
+- cast int() at bottlenecks (instead of everywhere else)
+- init normal chance cards into normal[],
     then shuffle into chance[]
     to prevent re-initializing all cards
 
     ORGANIZATION
-_ create separate module chance
-_ organize initialization methods (lines 298-408)
-_ create modules to import (ie clean up this mess)
--> draw map of methods, classes, inheritance, etc.
-
+- create separate module chance
+- organize initialization methods (lines 298-408)
 '''
 import random as r
 
@@ -83,7 +77,7 @@ class Player(object):               #each player has their own Player object
         if n<0:                                     #only positive integers
             raise InputError('payment of n < 0')
         elif self.savings-n < 0:                    #check if sufficient savings
-            raise InsufficientFunds(self.name +' cannot make payment')
+            raise InsufficientFunds(self.name,'cannot make payment')
         else:                                       #adjust savings
             self.savings -= n
     
@@ -185,7 +179,7 @@ class Property(object):                     #all 22 properties are Property obje
         if self.owner in range(len(pi)):
             return int(self.owner)                  #0 if Bank, pos int if player
         else:
-            raise PropertyIssue('Property #'+str(self.num)+' has invalid owner')
+            raise PropertyIssue('Property #',self.num,' has invalid owner',sep ='')
     
     def getOwner(self):                     #return Player that owns property
         if self.owner == 0:                     #raise exception if owned by bank
@@ -194,7 +188,10 @@ class Property(object):                     #all 22 properties are Property obje
             return pi[self.getOwnerNum()]       #by calling getOwnerNum()
     
     def getOwnerName(self):                 #return owner's name as str
-        return pi[self.getOwnerNum()].getName()     #call Player.getName(), self.getOwnerNum()
+        if self.getOwnerNum() == 0:             #call .getOwnerNum()
+            return 'the Bank'
+        else:
+            return self.getOwner().getName()    #call .getOwner().getName()
     
     def getCost(self):                      #return Property.cost as int
         return int(self.cost)
@@ -282,14 +279,14 @@ def nameToPlayer(name):     #given name, return associated Player
     for i in range(1,len(pi)):  #check through pi to see if name matches
         if name == str(pi[i].getName()):
             return pi[i]
-    raise InputError(str(name) +' is not a valid player')
+    raise InputError(str(name),'is not a valid player')
 
     #private
 def numToPlayer(num):       #given number, return associated Player
     if num in range(1,len(pi)):
         return pi[num]
     else:
-        raise InputError(str(num) +' is not a valid player')
+        raise InputError(str(num),'is not a valid player')
 
     #private
 def allToPlayer(anyForm):   #given str/int/Player, return associated Player (if able)
@@ -300,14 +297,14 @@ def allToPlayer(anyForm):   #given str/int/Player, return associated Player (if 
     elif isinstance(anyForm,Player):
         return anyForm
     else:
-        raise InputError(str(anyForm) +' is not a valid player')
+        raise InputError(str(anyForm),'is not a valid player')
 
     #private
 def numToProp(num):         #given number, return associated Property
     if num in range(1,23):
         return prop[num]
     else:
-        raise InputError(str(num) +' is not a valid property')
+        raise InputError(str(num),'is not a valid property')
 
     #private
 def allToProp(anyForm):     #given int/Property, return associated Property
@@ -316,7 +313,7 @@ def allToProp(anyForm):     #given int/Property, return associated Property
     elif isinstance(anyForm,Property):
         return anyForm
     else:
-        raise InputError(str(anyForm) +' is not a valid property')
+        raise InputError(str(anyForm),'is not a valid property')
 
 ##INITIALIZATION
 
@@ -446,23 +443,29 @@ def printStartScreen():     #print art for start screen
     #public
 def addPlayer(name):    #add Player to game with user-defined name
     if type(name) == str:
+        if len(name) > 10:
+            raise InputError('name is too long, please use 10 or fewer characters')
         k = len(pi)
         for i in range(k):      #name must be unique
             if pi[i].getName() == name:
                 raise InputError('name already taken')
         pi.append(Player(k,name))
         if k != 0:              #print an acknowledgement (except for the Bank)
-            print(name + ' is player ' + str(k))
+            print(name,'is player',k)
     else:
         raise InputError('name was not a string')
 
 def displayPlayers():           #display all players and their savings and net worth
     print('---------------------------------')  #with formatting so it looks nice
     print('_________________________________')
-    print('Name\t'+'Number\t'+'Savings\t'+'Net Worth')
+    print('Name      Number  Savings  Net Worth')
     for i in range(1,len(pi)):
-        print(pi[i].getName(),'\t',pi[i].getNum(),
-            '\t$',pi[i].getSavings(),'\t$',pi[i].getNetWorth())
+        name = pi[i].getName()
+        while len(name) < 10:
+            name = name + ' '
+        print(name,'  ',pi[i].getNum(),
+              '\t  $',pi[i].getSavings(),
+              '\t   $',pi[i].getNetWorth(),sep ='')
     print('---------------------------------')
 
 def displayProperty(propin):    #display info for a property
@@ -478,7 +481,7 @@ def displayProperties():        #displays .getInfo() for all properties
 def displayPropertiesOf(pin):   #displays list of properties owned by pin
     p1 = allToPlayer(pin)
     plist = p1.getPropertyList()
-    print(p1.getName(),' owns:')
+    print(p1.getName(),'owns:')
     for i in range(len(plist)):
         print(plist[i])
 
@@ -495,7 +498,7 @@ def drawChance():               #print next chance card in the deck
 def passGO(pin):                #pin receives $200 for passing GO
     p1 = allToPlayer(pin)
     p1.receive(200)
-    print(p1.getName(),' passed GO')
+    print(p1.getName(),'passed GO')
 
 ##PAYMENT
 
@@ -505,19 +508,19 @@ def payPlayer(p1in,n,p2in):     #move $n from p1 to p2
     p2 = allToPlayer(p2in)
     p1.pay(n)
     p2.receive(n)
-    print(p1.getName(),' paid $',n,' to ',p2.getName())
+    print(p1.getName(),' paid $',n,' to ',p2.getName(),sep ='')
 
     #public
 def payToBank(pin,n):           #remove $n from p1
     p1 = allToPlayer(pin)
     p1.pay(n)
-    print(p1.getName(),' paid $',n)
+    print(p1.getName(),' paid $',n,sep ='')
 
     #public
 def receiveFromBank(pin,n):     #give $n to p1
     p1 = allToPlayer(pin)
     p1.receive(n)
-    print(p1.getName(),' received $',n)
+    print(p1.getName(),' received $',n,sep ='')
 
 ##PROPERTIES
 
@@ -525,12 +528,12 @@ def receiveFromBank(pin,n):     #give $n to p1
 def changeOwner(pin,propin):    #change all ownership attributes (in Player and Property)
     p1 = allToPlayer(pin)
     prop = allToProp(propin)
-    prevOwner = prop.getOwnerNum()  #remove ownership from previous owner (if Player)
-    if prevOwner in range(1,len(pi)):
-        pi[prevOwner].removeProperty(prop.getNum())
+    prevOwnerNum = prop.getOwnerNum()  #remove ownership from previous owner (if Player)
+    if prevOwnerNum in range(1,len(pi)):
+        pi[prevOwnerNum].removeProperty(prop.getNum())
     p1.addProperty(prop.getNum())   #add ownership for new owner
     prop.setOwner(p1.getNum())      #set Property.owner
-    print(p1.getName(),' now owns ',prop.getName())
+    print(p1.getName(),'now owns',prop.getName())
     
     #public
 def buyProperty(pin,propin):    #pin pays and takes ownership of propin
@@ -540,55 +543,53 @@ def buyProperty(pin,propin):    #pin pays and takes ownership of propin
         p1.pay(prop.getCost())          #pay
         prop.setOwner(p1.getNum())      #assign property ownership
         p1.addProperty(prop.getNum())   #player takes ownership
-        print(p1.getName(),' bought ',prop.getName(),' for $',prop.getCost())
+        print(p1.getName(),' bought ',prop.getName(),' for $',prop.getCost(),sep ='')
     else:                           #otherwise tell user it is already owned
-        raise PropertyIssue(pi[prop.getOwnerNum()].getName(),' already owns that')
+        raise PropertyIssue(prop.getOwnerName(),'already owns that')
 
     #public
 def payRent(pin,propin):        #pin pays rent to owner of propin
     p1 = allToPlayer(pin)
     prop = allToProp(propin)
     if prop.isMortgaged():          #unless it is mortgaged
-        raise PropertyIssue('Property is mortgaged by '+ pi[prop.getOwnerNum()].getName())
+        raise PropertyIssue('Property is mortgaged by',prop.getOwnerName())
     elif prop.getOwnerNum() == 0:   #or owned by the bank
         raise PropertyIssue('No one owns this property')
     else:
-        payPlayer(p1,prop.getRentCost(),pi[prop.getOwnerNum()])     #pay owner
+        payPlayer(p1,prop.getRentCost(),prop.getOwner())     #pay owner
 
     #public
 def mortgage(propin):               #owner mortgages a property and receives money
     prop = allToProp(propin)
-    if prop.getOwnerNum() in range(1,len(pi)):                 #ensure property is owned by a player
+    if prop.getOwnerNum() == 0:          #if owned by bank, raise exception
+        raise PropertyIssue('no one owns this property')
+    else:
         cost = int(prop.getCost()/2)    #player receives half of property cost
         prop.mortgage()                 #mortgage
         prop.getOwner().receive(cost)   #owner receives money
-        print(prop.getOwnerName(),' mortgaged ',prop.getName(),' for $',cost) 
-    elif prop.getOwnerNum() == 0:                              #if owned by bank, throw exception
-        raise PropertyIssue('no one owns this property')
-    else:                                                   #if other owner, throw exception
-        raise Exception('something went wrong')
+        print(prop.getOwnerName(),' mortgaged ',prop.getName(),' for $',cost,sep ='')
 
     #public
 def unmortgage(propin):             #owner pays to unmortgage a property
     prop = allToProp(propin)
-    if prop.getOwnerNum() in range(1,len(pi)):  #if owned by a player
-        cost = int(prop.getCost()/2)
-        prop.unMortgage()                       #unmortgage property
-        prop.getOwner().pay(cost)               #owner pays bank
-        print(prop.getOwnerName(),' unmortgaged ',prop.getName(),' for $',cost)
-    else:
+    if prop.getOwnerNum() == 0:         #if owned by bank, raise exception
         raise PropertyIssue('no one owns this property')
+    else:
+        cost = int(prop.getCost()/2)
+        prop.unMortgage()               #unmortgage property
+        prop.getOwner().pay(cost)       #owner pays bank
+        print(prop.getOwnerName(),' unmortgaged ',prop.getName(),' for $',cost,sep ='')        
 
     #public         (use try catch so all conditions are checked)
 def buyHouses(propin,n):                #owner pays to increase property value by n
     prop = allToProp(propin)
-    if prop.getOwnerNum() in range(1,len(pi)):  #if owned by a player
-        prop.changeVal(n)                       #update house value
-        cost = prop.getHouseCost()*n            #get cost of n houses
-        prop.getOwner().pay(cost)        #owner pays cost
-        print(prop.getOwnerName(),' bought ',n,' house(s) on ',prop.getName(),' for $',cost)
+    if prop.getOwnerNum() == 0:
+        raise PropertyIssue('no one owns this property')
     else:
-        raise PropertyIssue("you don't own this property")
+        prop.changeVal(n)                   #update house value
+        cost = prop.getHouseCost()*n        #get cost of n houses
+        prop.getOwner().pay(cost)           #owner pays cost
+        print(prop.getOwnerName(),' bought ',n,' house(s) on ',prop.getName(),' for $',cost,sep ='')
 
     #public
 def buyHouse(propin):       #owner pays to increase property value by 1
@@ -599,23 +600,15 @@ def sellHouses(propin,n):   #owner receives money to decrease property value by 
     prop = allToProp(propin)
     if prop.getOwnerNum() in range(1,len(pi)):  #if owned by a player
         prop.changeVal(-n)                      #reduce .val by n
-        value = int(n*prop.getHouseCost()/2)    #receive half the house cost
-        prop.getOwner().receive(value)          #owner receives money
-        print(prop.getOwnerName(),' sold ',n,' house(s) on ',prop.getName(),' for $',value)
+        cost = int(n*prop.getHouseCost()/2)    #receive half the house cost
+        prop.getOwner().receive(cost)          #owner receives money
+        print(prop.getOwnerName(),' sold ',n,' house(s) on ',prop.getName(),' for $',cost,sep ='')
     else:
-        raise PropertyIssue("you don't own this property")
+        raise PropertyIssue('no one owns this property')
 
     #public
 def sellHouse(propin):      #owner receives money to decrease property value by 1
 	sellHouses(propin,1)
 
 #MAIN
-def test():
-    startGame()
-    addPlayer('Gilly')
-    addPlayer('Zander')
-    addPlayer('Tristan')
-    displayPlayers()
-
-
-    
+startGame()
