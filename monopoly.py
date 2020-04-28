@@ -8,19 +8,21 @@ patch 5.3
 '''
 NEW
     TESTED
-
+- getNetWorth()
+- help()
+- trade()
+- payAll()
+- receiveFromAll()
+- repair exception messages
     UNTESTED
-- use appropriate Property.getOwner() or .getOwnerName() or .getOwnerNum()
-- print() needs space = '' for printing multiple objects
-- set max name size
-- displayPlayers() should print spaces after each name to hit the right size
 
 IN PROCESS
 
-TODO
-    Patch5 NEXT STEPS
-- thoroughly test
+NEXT STEPS
     PLAYABILITY
+> beautification
+- property card display (num houses, ownership, rent/cost/mortgaged)
+- player profile (property list, savings, net worth)
 > what happens to bankrupt players?
 - bankrupcy calculation... if networth is too low for a transaction
 - display BANKRUPT in player's savings and net worth
@@ -30,9 +32,14 @@ TODO
 - displayPropertiesOf(pin)
 - removePlayer() <- adjust index for all players
 - trading (with user input?)
+> long-term
+- landOn(pin,space) displays actions (draws chance,displays property cost, pays rent, indicates not enough money)
+    and automatically collects GO money
 
     CODE
-- add isPlayer() to further modulate code (remove error handling from downstream methods)
+- add bool isPlayer() to further modulate code (remove error handling from downstream methods)
+- add bool sufficientFunds() to check savings without making a payment yet
+- add bool isProperty() to modulate code
 - cast int() at bottlenecks (instead of everywhere else)
 - init normal chance cards into normal[],
     then shuffle into chance[]
@@ -77,7 +84,7 @@ class Player(object):               #each player has their own Player object
         if n<0:                                     #only positive integers
             raise InputError('payment of n < 0')
         elif self.savings-n < 0:                    #check if sufficient savings
-            raise InsufficientFunds(self.name,'cannot make payment')
+            raise InsufficientFunds(self.getName()+' cannot make payment')
         else:                                       #adjust savings
             self.savings -= n
     
@@ -120,7 +127,11 @@ class Player(object):               #each player has their own Player object
         worth = self.savings
         for p in range(1,22):
             if self.properties[p] == 1:
-                worth += prop[p].getCost()
+                if prop[p].isMortgaged():
+                    worth += prop[p].getCost()/2
+                else:
+                    worth += prop[p].getCost()
+                    worth += prop[p].getValue()*prop[p].getHouseCost()
         return int(worth)
 
 class Property(object):                     #all 22 properties are Property objects
@@ -157,7 +168,7 @@ class Property(object):                     #all 22 properties are Property obje
             raise InputError('invalid property value')
     
     def mortgage(self):                     #change mortgaged to True
-        if self.mortgaged:                      #raise exception if already mortgaged
+        if self.isMortgaged():                      #raise exception if already mortgaged
             raise PropertyIssue('property is already mortgaged')
         else:
             self.mortgaged = True
@@ -179,7 +190,7 @@ class Property(object):                     #all 22 properties are Property obje
         if self.owner in range(len(pi)):
             return int(self.owner)                  #0 if Bank, pos int if player
         else:
-            raise PropertyIssue('Property #',self.num,' has invalid owner',sep ='')
+            raise PropertyIssue('Property #'+str(self.num)+' has invalid owner')
     
     def getOwner(self):                     #return Player that owns property
         if self.owner == 0:                     #raise exception if owned by bank
@@ -279,14 +290,14 @@ def nameToPlayer(name):     #given name, return associated Player
     for i in range(1,len(pi)):  #check through pi to see if name matches
         if name == str(pi[i].getName()):
             return pi[i]
-    raise InputError(str(name),'is not a valid player')
+    raise InputError(str(name)+' is not a valid player')
 
     #private
 def numToPlayer(num):       #given number, return associated Player
     if num in range(1,len(pi)):
         return pi[num]
     else:
-        raise InputError(str(num),'is not a valid player')
+        raise InputError(str(num)+' is not a valid player')
 
     #private
 def allToPlayer(anyForm):   #given str/int/Player, return associated Player (if able)
@@ -297,14 +308,14 @@ def allToPlayer(anyForm):   #given str/int/Player, return associated Player (if 
     elif isinstance(anyForm,Player):
         return anyForm
     else:
-        raise InputError(str(anyForm),'is not a valid player')
+        raise InputError(str(anyForm)+' is not a valid player')
 
     #private
 def numToProp(num):         #given number, return associated Property
     if num in range(1,23):
         return prop[num]
     else:
-        raise InputError(str(num),'is not a valid property')
+        raise InputError(str(num)+' is not a valid property')
 
     #private
 def allToProp(anyForm):     #given int/Property, return associated Property
@@ -313,7 +324,7 @@ def allToProp(anyForm):     #given int/Property, return associated Property
     elif isinstance(anyForm,Property):
         return anyForm
     else:
-        raise InputError(str(anyForm),'is not a valid property')
+        raise InputError(str(anyForm)+' is not a valid property')
 
 ##INITIALIZATION
 
@@ -432,6 +443,7 @@ def startGame():        #sets up game
     addPlayer('the Bank')   #to occupy the Player 0 spot (with other convenient uses)
     printStartScreen()
     print('\n> use addPlayer("name") to add each person')
+    print('> type helpme() for assistance')
 
     #private
 def printStartScreen():     #print art for start screen
@@ -439,6 +451,26 @@ def printStartScreen():     #print art for start screen
 '                               __\n'+
 ' //\/\\\   // \\\  |\||  // \\\  ||_|  // \\\  ||    \\\//  \n'+
 '//    \\\  \\\ //  ||\|  \\\ //  ||    \\\ //  ||__   ||   ')
+
+    #public
+def helpme():
+    print(
+'\nEnter the player number or property number to use these methods    \n\n'+
+'<PAYMENT>                          <PROPERTIES>                    \n'+
+'payToBank(player,amount)           buyProperty(player,property)    \n'+
+'receiveFromBank(player,amount)     changeOwner(new owner,property) \n'+
+'payPlayer(payer,amount,receiver)   mortgage(property)              \n'+
+'                                   unmortgage(property)            \n'+
+'<ACTIONS>                          buyHouse(property)              \n'+
+'passGO(player)                     buyHouses(property,number)      \n'+
+'payRent(player)                    sellHouse(property)             \n'+
+'drawChance()                       sellHouses(property,number)     \n'+
+'                                   \n'+
+'<INFO>                             \n'+
+'displayPlayers()                   \n'+
+'displayPlayer(player)              \n'+
+'displayProperties()                \n'+
+'displayProperty(property)')
 
     #public
 def addPlayer(name):    #add Player to game with user-defined name
@@ -500,6 +532,23 @@ def passGO(pin):                #pin receives $200 for passing GO
     p1.receive(200)
     print(p1.getName(),'passed GO')
 
+    #public
+def trade(p1,port1,n1,p2,port2,n2):
+    try:
+        print('TRADE')
+        if n1 > 0:
+            payPlayer(p2,n1,p1)
+        if n2 > 0:
+            payPlayer(p1,n2,p2)
+        for p in range(len(port1)):
+            changeOwner(p1,port1[p])
+        for p in range(len(port2)):
+            changeOwner(p2,port2[p])
+    except TypeError:
+        print('*trade failed*\nInput should be:\n'+
+              '\t(Player1,[property,list,1],integer1,P2,[prop,list,2],int2)\n'+
+              'Please reset all transactions')
+    
 ##PAYMENT
 
     #public
@@ -521,6 +570,24 @@ def receiveFromBank(pin,n):     #give $n to p1
     p1 = allToPlayer(pin)
     p1.receive(n)
     print(p1.getName(),' received $',n,sep ='')
+    
+    #public
+def payAll(pin,n):
+    p1 = allToPlayer(pin)
+    for p in range(1,len(pi)):
+        if pi[p].getNum() != p1.getNum():
+            p1.pay(n)
+            pi[p].receive(n)
+    print(p1.getName(),' paid $',n,' to all other players',sep ='')
+    
+    #public
+def receiveFromAll(pin,n):
+    p1 = allToPlayer(pin)
+    for p in range(1,len(pi)):
+        if pi[p].getNum() != p1.getNum():
+            pi[p].pay(n)
+            p1.receive(n)
+    print(p1.getName(),' received $',n,' from all other players',sep ='')
 
 ##PROPERTIES
 
@@ -545,14 +612,14 @@ def buyProperty(pin,propin):    #pin pays and takes ownership of propin
         p1.addProperty(prop.getNum())   #player takes ownership
         print(p1.getName(),' bought ',prop.getName(),' for $',prop.getCost(),sep ='')
     else:                           #otherwise tell user it is already owned
-        raise PropertyIssue(prop.getOwnerName(),'already owns that')
+        raise PropertyIssue(prop.getOwnerName()+' already owns that')
 
     #public
 def payRent(pin,propin):        #pin pays rent to owner of propin
     p1 = allToPlayer(pin)
     prop = allToProp(propin)
     if prop.isMortgaged():          #unless it is mortgaged
-        raise PropertyIssue('Property is mortgaged by',prop.getOwnerName())
+        raise PropertyIssue('Property is mortgaged by '+prop.getOwnerName())
     elif prop.getOwnerNum() == 0:   #or owned by the bank
         raise PropertyIssue('No one owns this property')
     else:
