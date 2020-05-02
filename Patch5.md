@@ -5,12 +5,18 @@ Gameplay test remarks
 - write help() function with list of commands
 - add displayPlayer(pin) to display a single player's attributes
   (likely in patch-6)
+Code remarks
+- remove owner, value from Property.__init__()
+- isolate Player.getProperties() from prop[]
 Patch notes
-- added methods help(), trade(), payAll(), receiveFromAll()
+- added methods helpme(), trade(), payAll(), receiveFromAll()
 - fixed net worth calculation
 - repaired exception messages
-Next steps
-- thorough testing of functionality before merge
+- remove owner,value from Property.__init__()
+- Player.getProperties() returns properties list (1's and 0's)
+- displayPropertiesOf(player)
+- rename .unMortgage() to .unmortgage()
+- rename printArt() to printChance() 
 5.4
 - use appropriate Property.getOwner() or .getOwnerName() or .getOwnerNum()
 - print() needs space = '' for printing multiple objects
