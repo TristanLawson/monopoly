@@ -8,12 +8,11 @@ HOW TO USE
 - remember to type m.____ before each method
 
 NEXT STEPS
-
     PATCH 6
-- modulate
-- fix chance initiation
 - add bool isPlayer(),isProperty(),sufficientFunds() for efficiency
-- add method removePlayer()
+- add endgame() that declares winner, displays final standings, and resets
+- add railroads
+
 
     PLAYABILITY
 > beautification
@@ -23,7 +22,7 @@ NEXT STEPS
 - bankrupcy calculation... if networth is too low for a transaction
 - display BANKRUPT in player's savings and net worth
 > write/repair functions
-- removePlayer() <- adjust index for all players
+- smart chance drawer
 > long-term
 - landOn(pin,space) displays actions (draws chance,displays property cost, pays rent, indicates not enough money)
     and automatically collects GO money
@@ -36,6 +35,3 @@ NEXT STEPS
 - init normal chance cards into normal[],
     then shuffle into chance[]
     to prevent re-initializing all cards
-
-    ORGANIZATION
-- create separate module chance
