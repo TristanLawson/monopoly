@@ -1,3 +1,9 @@
+6.2
+- added transports
+- add endgame() that declares winner, displays final standings, and resets
+- change trans[] to end of prop[]
+    & clean up associated code
+
 6.1
 - added transports
 NEXT STEPS

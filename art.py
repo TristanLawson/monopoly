@@ -48,6 +48,13 @@ def printStartScreen():     #print art for start screen
 ' //\/\\\   // \\\  |\||  // \\\  ||_|  // \\\  ||    \\\//  \n'+
 '//    \\\  \\\ //  ||\|  \\\ //  ||    \\\ //  ||__   ||   ')
 
+
+def printEndScreen(winner):     #print art for end screen
+    print('Congratulations to our winner(s)')
+    for p in range(len(winner)):
+        print('\t',winner[p].getName())
+    print('with a total net worth of $',winner[0].getNetWorth(),sep='')
+    
 def printHelpScreen():
     print(
 '\nEnter the player number or property number to use these methods    \n\n'+

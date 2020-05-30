@@ -8,11 +8,6 @@ HOW TO USE
 - remember to type m.____ before each method
 
 NEXT STEPS
-    PATCH 6
-- add bool isPlayer(),isProperty(),sufficientFunds() for efficiency
-- add endgame() that declares winner, displays final standings, and resets
-- add railroads
-
 
     PLAYABILITY
 > beautification
