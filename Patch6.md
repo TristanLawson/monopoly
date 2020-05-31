@@ -1,3 +1,13 @@
+6.4
+- removed displayProperties(), displayPropertiesOf(pin)
+- endGame() has 'no players remaining' case
+- added changeOwner()
+- edited art
+- repaired trade, Transport.getInfo()
+
+6.3
+???
+
 6.2
 - added transports
 - add endgame() that declares winner, displays final standings, and resets

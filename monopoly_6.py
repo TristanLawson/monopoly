@@ -2,21 +2,22 @@
 """
 Created on Sat Apr 11 10:19:23 2020
 monopoly_6.py
-patch 6.3
+patch 6.4
 @author: trist
 """
 '''
 NEW
     TESTED
-- added transports
-- add endgame() that declares winner, displays final standings, and resets
-- change trans[] to end of prop[]
-    & clean up associated code
-    
+- removed displayProperties(), displayPropertiesOf(pin)
+- endGame() has 'no players remaining' case
+- added changeOwner()
+- edited art
+- repaired trade, Transport.getInfo()
+
     UNTESTED
-    
+
 IN PROCESS
-    
+
 NEXT STEPS
 
     PLAYABILITY
@@ -237,7 +238,7 @@ class Property(object):                     #all 22 properties are Property obje
         return self.mortgaged
     
     def getInfo(self):                      #return str describing property
-        info = self.name +' is owned by '+ pi[self.owner].name  #Player owns Property
+        info = self.name +' is owned by '+ pi[self.owner].getName()  #Player owns Property
         if self.owner == 0:                                 #if owned by Bank
             return info + '\nBuy for $'+ str(self.cost)     #write cost
         elif self.mortgaged:                                #if owned by player and mortgaged
@@ -294,6 +295,13 @@ class Transport(object):        #transport capital
         cost = self.fees[p1.getNumTransports()]   #check number of transports owned by owner
         return cost                             #return cost (int)
     
+    def getInfo(self):          #return str containing owner and (cost or fee)
+        info = self.name +' is owned by '+ pi[self.owner].getName()
+        if self.owner == 0:
+            return info +'\nBuy for $'+ str(self.cost) #if owned by bank, return cost
+        else:
+            return info +'\nFee is $'+ str(self.getFee())     #if owned by player, return fee
+        
 #METHODS
 
 ##INPUT PARSING
@@ -350,8 +358,8 @@ def allToTrans(anyForm):       #given int/transport, return associated Transport
 
     #private
 def numToTrans(num):        #given number, return associated Transport
-    if num in range(1,5):
-        return prop[22+num]
+    if num in range(23,27):
+        return prop[num]
     else:
         raise InputError(str(num)+' is not a valid transport')
 ##INITIALIZATION
@@ -429,8 +437,32 @@ def receiveFromAll(pin,n):
     print(p1.getName(),' received $',n,' from all other players',sep ='')
 
 ##PROPERTIES
+    
+    #public
+def changeOwner(pin,ain):
+    try:
+        if type(ain) != int:
+            raise Exception
+    except:
+        print("Please type the asset's number as input")
+    else:
+        if ain in range(1,23):
+            changePropOwner(pin,ain)
+        elif ain in range(23,27):
+            changeTransOwner(pin,ain)
+        
+    #private
+def changeTransOwner(pin,trin):     #change ownership attributes (Player and Transport)
+    p1 = allToPlayer(pin)
+    trans = allToTrans(trin)
+    prevOwnerNum = trans.getOwnerNum()  #get prev owner
+    if prevOwnerNum in range(1,len(pi)):    #if prev owner is a player, remove Transport
+        pi[prevOwnerNum].removeTransport()
+    p1.addTransport()                   #add transport to new owner
+    trans.setOwner(p1.getNum())                  #set owner of transport
+    print(p1.getName(),'now owns',trans.getName())
 
-    #public              (use try catch)
+    #private              (use try catch)
 def changePropOwner(pin,propin):    #change all ownership attributes (in Player and Property)
     p1 = allToPlayer(pin)
     prop = allToProp(propin)
@@ -441,6 +473,18 @@ def changePropOwner(pin,propin):    #change all ownership attributes (in Player 
     prop.setOwner(p1.getNum())      #set Property.owner
     print(p1.getName(),'now owns',prop.getName())
     
+    #public
+def buyTransport(pin,trin):         #pin buys transport from the bank
+    p1 = allToPlayer(pin)
+    trans = allToTrans(trin)
+    if trans.getOwnerNum() == 0:    #if owned by the bank
+        p1.pay(trans.getCost())         #pay
+        trans.setOwner(p1.getNum())     #set transport owner
+        p1.addTransport()               #add transport to player's list
+        print(p1.getName(),' bought ',trans.getName(),' for $',trans.getCost(),sep ='')
+    else:
+        raise PropertyIssue(trans.getOwnerName()+' already owns that')
+
     #public
 def buyProperty(pin,propin):    #pin pays and takes ownership of propin
     p1 = allToPlayer(pin)
@@ -453,29 +497,6 @@ def buyProperty(pin,propin):    #pin pays and takes ownership of propin
     else:                           #otherwise tell user it is already owned
         raise PropertyIssue(prop.getOwnerName()+' already owns that')
 
-    #public
-def changeTransOwner(pin,trin):     #change ownership attributes (Player and Transport)
-    p1 = allToPlayer(pin)
-    trans = allToTrans(trin)
-    prevOwnerNum = trans.getOwnerNum()  #get prev owner
-    if prevOwnerNum in range(1,len(pi)):    #if prev owner is a player, remove Transport
-        pi[prevOwnerNum].removeTransport()
-    p1.addTransport()                   #add transport to new owner
-    trans.setOwner(p1.getNum())                  #set owner of transport
-    print(p1.getName(),'now owns',trans.getName())
-
-    #public
-def buyTransport(pin,trin):         #pin buys transport from the bank
-    p1 = allToPlayer(pin)
-    trans = allToTrans(trin)
-    if trans.getOwnerNum() == 0:    #if owned by the bank
-        p1.pay(trans.getCost())         #pay
-        trans.setOwner(p1.getNum())     #set transport owner
-        p1.addTransport()               #add transport to player's list
-        print(p1.getName(),' bought ',trans.getName(),' for $',trans.getCost(),sep ='')
-    else:
-        raise PropertyIssue(trans.getOwnerName()+' already owns that')
-        
     #public
 def mortgage(propin):               #owner mortgages a property and receives money
     prop = allToProp(propin)
@@ -571,9 +592,15 @@ def trade(p1,port1,n1,p2,port2,n2):     #p1 receives properties in list port1, m
         if n2 > 0:
             payPlayer(p1,n2,p2)
         for p in range(len(port1)):     #call changePropOwner() for properties
-            changePropOwner(p1,port1[p])
+            if port1[p] in range(1,23):
+                changePropOwner(p1,port1[p])
+            elif port1[p] in range(23,27):
+                changeTransOwner(p1,port1[p])
         for p in range(len(port2)):
-            changePropOwner(p2,port2[p])
+            if port2[p] in range(1,23):
+                changePropOwner(p2,port2[p])
+            elif port2[p] in range(23,27):
+                changeTransOwner(p2,port2[p])
     except TypeError:                   #instruct user to reset trade if it fails
         print('*trade failed*\nInput should be:\n'+
               '\t(Player1,[property,list,1],integer1,P2,[prop,list,2],int2)\n'+
@@ -601,20 +628,9 @@ def displayProperty(propin):    #display info for a property
     print(prop.getInfo())       #calls Property.getInfo()
 
     #public
-def displayProperties():        #displays .getInfo() for all properties
-    print('---------------------------------')
-    for i in range(1,23):
-        print(prop[i].getInfo())
-    print('---------------------------------')
-
-    #public
-def displayPropertiesOf(pin):   #displays list of properties owned by pin
-    p1 = allToPlayer(pin)
-    plist = p1.getProperties()      #call Player.getProperties()
-    print(p1.getName(),'owns:')
-    for i in range(1,len(plist)):   #print name of all properties owned by player
-        if i == 1:
-            print(prop[i].getName())
+def displayTransport(trin):     #display info for a transport
+    trans = allToTrans(trin)
+    print(trans.getInfo())      #calls Transport.getInfo()
 
 ##GAMEPLAY
     
@@ -628,6 +644,22 @@ def startGame():        #sets up game
     print('\n> use addPlayer("name") to add each person')
     print('> type helpme() for assistance')
 
+    #public
+def endGame():
+    global pi
+    if len(pi)<2:
+        print('there are no players in the game')
+        pi = []
+    else:
+        winner = [pi[1]]                    #set first player as temporary max
+        for p in range(2,len(pi)):          #find highest net worth in pi
+            if pi[p].getNetWorth() > winner[0].getNetWorth():
+                winner = [pi[p]]            #if player has higher net worth, they are curr winner
+            elif pi[p].getNetWorth() == winner[0].getNetWorth():
+                winner.append(pi[p])        #if player has equal net worth, they are tied
+        a.printEndScreen(winner)              #display
+        pi = []
+        
     #public
 def addPlayer(name):    #add Player to game with user-defined name
     if type(name) == str:
@@ -671,26 +703,6 @@ def shiftAssets(num):           #for removing a player, change all their assets 
     #public
 def helpme():
     a.printHelpScreen()
-
-    #public
-def endGame():
-    global pi
-    if len(pi)<2:
-        raise Exception('there are no players in the game')
-    winner = [pi[1]]                    #set first player as temporary max
-    for p in range(2,len(pi)):          #find highest net worth in pi
-        if pi[p].getNetWorth() > winner[0].getNetWorth():
-            winner = [pi[p]]            #if player has higher net worth, they are curr winner
-        elif pi[p].getNetWorth() == winner[0].getNetWorth():
-            winner.append(pi[p])        #if player has equal net worth, they are tied
-    a.printEndScreen(winner)              #display
-    pi = []
-
-def test():
-    addPlayer('numbaONE')
-    addPlayer('numeroDue')
-    endGame()
-    
+ 
 #MAIN
 startGame()
-test()

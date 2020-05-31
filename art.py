@@ -50,34 +50,38 @@ def printStartScreen():     #print art for start screen
 
 
 def printEndScreen(winner):     #print art for end screen
+    print('--------------------------------')
     print('Congratulations to our winner(s)')
     for p in range(len(winner)):
         print('\t',winner[p].getName())
     print('with a total net worth of $',winner[0].getNetWorth(),sep='')
-    
+    print('--------------------------------')
+      
 def printHelpScreen():
     print(
 '\nEnter the player number or property number to use these methods    \n\n'+
-'<PAYMENT>                          <PROPERTIES>                    \n'+
-'payToBank(player,amount)           changeOwner(new owner,property) \n'+
-'receiveFromBank(player,amount)     buyProperty(player,property)    \n'+
-'payPlayer(payer,amount,receiver)   mortgage(property)              \n'+
-'payAll(payer,amount_per_person)    unmortgage(property)            \n'+
-'receiveFromAll(receiver,amount_pp) buyHouse(property)              \n'+
-'                                   buyHouses(property,number)      \n'+
-'<ACTIONS>                          sellHouse(property)             \n'+
-'passGO(player)                     sellHouses(property,number)     \n'+
-'payRent(player)                    \n'+
+'<PAYMENT>                          <ASSETS>                        \n'+
+'payToBank(player,amount)           changeOwner(new owner,number)   \n'+
+'receiveFromBank(player,amount)     buyTransport(player,transport)  \n'+
+'payPlayer(payer,amount,receiver)   buyProperty(player,property)    \n'+
+'payAll(payer,amount_per_person)    mortgage(property)              \n'+
+'receiveFromAll(receiver,amount_pp) unmortgage(property)            \n'+
+'                                   buyHouse(property)              \n'+
+'<ACTIONS>                          buyHouses(property,number)      \n'+
+'passGO(player)                     sellHouse(property)             \n'+
+'payRent(player)                    sellHouses(property,number)     \n'+
+'payFee(player)                     \n'+
 'drawChance()                       \n'+
 'trade(player1,portfolio1,amount1,player2,portfolio2,amount2)       \n'+
 '   portfolios are list of property numbers, amount is an integer   \n'+
 '   portfolio1 & amount1 are received by player1, port2 & n2 by p2  \n'+
 '                                   \n'+
-'<INFO>                             <GAMEPLAY>                         \n'+
-'displayPlayers()                   startGame()                     \n'+
-'displayProperty(property)          addPlayer()                     \n'+
-'displayProperties()                helpme()                        \n'+
-'displayPropertiesOf(player)')
+'<GAMEPLAY>                         <INFO>                          \n'+
+'startGame()                        displayPlayers()                \n'+
+'endGame()                          displayProperty(property)       \n'+
+'addPlayer()                        displayTransport(transport)     \n'+
+'removePlayer(player)               \n'+
+'helpme()                           \n')
     
 def printChance(phrase):
     lines = formatString(phrase)    #format phrase to fit on card
